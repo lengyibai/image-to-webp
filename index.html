@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="zh-CN">
 <meta charset="utf-8">
-<title>图片批量转 WebP 并打包下载</title>
+<title>批量转 WebP 并打包下载</title>
 <body>
   <input type="file" id="file" accept="image/*" multiple>
   <label>
@@ -11,18 +11,23 @@
   <br><br>
   <div id="progress" style="margin-bottom:8px;"></div>
   <button id="run">开始压缩</button>
+  <pre id="log" style="border:1px solid #ccc; padding:8px; height:500px; overflow:auto;font-size: 20px;"></pre>
 
-  <script src="./jszip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
   <script>
     const fileInput = document.getElementById('file');
     const qInput = document.getElementById('q');
     const runBtn = document.getElementById('run');
     const progressDiv = document.getElementById('progress');
+    const logDiv = document.getElementById('log');
+
+    const fmtSize = n => n > 1024*1024 ? (n/1048576).toFixed(2)+' MB' : (n/1024).toFixed(2)+' KB';
 
     runBtn.addEventListener('click', async () => {
       if (!fileInput.files.length) return alert('请选择图片');
       runBtn.disabled = true;
       progressDiv.textContent = '准备开始...';
+      logDiv.textContent = '';
 
       const qVal = Math.max(1, Math.min(100, +qInput.value || 75));
       const quality = qVal / 100;
@@ -46,6 +51,10 @@
         // 保留原文件名，只改扩展名
         const newName = file.name.replace(/\.[^.]+$/, '.webp');
         zip.file(newName, arrayBuffer);
+
+        // 输出压缩前后大小
+        logDiv.textContent += `${file.name}: ${fmtSize(file.size)} → ${fmtSize(blob.size)}\n`;
+        logDiv.scrollTop = logDiv.scrollHeight;
       }
 
       progressDiv.textContent = '正在打包 ZIP...';
