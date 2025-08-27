@@ -50,21 +50,34 @@
 
         // 保留原文件名，只改扩展名
         const newName = file.name.replace(/\.[^.]+$/, '.webp');
-        zip.file(newName, arrayBuffer);
+        if (files.length === 1) {
+          // 单张图片直接下载
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = file.name.replace(/\.[^.]+$/, '.webp');
+          a.click();
+          URL.revokeObjectURL(a.href);
+        } else {
+          // 多张图片打包 ZIP
+          zip.file(newName, arrayBuffer);
+        }
+
 
         // 输出压缩前后大小
         logDiv.textContent += `${file.name}: ${fmtSize(file.size)} → ${fmtSize(blob.size)}\n`;
         logDiv.scrollTop = logDiv.scrollHeight;
       }
 
-      progressDiv.textContent = '正在打包 ZIP...';
-      const zipBlob = await zip.generateAsync({ type: 'blob' });
-
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(zipBlob);
-      a.download = `Webp压缩-品质${qVal}.zip`;
-      a.click();
-      URL.revokeObjectURL(a.href);
+      if (files.length > 1) {
+        progressDiv.textContent = '正在打包 ZIP...';
+        const zipBlob = await zip.generateAsync({ type: 'blob' });
+      
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(zipBlob);
+        a.download = `Webp压缩-品质${qVal}.zip`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+      }
 
       progressDiv.textContent = '完成！';
       runBtn.disabled = false;
@@ -72,3 +85,4 @@
   </script>
 </body>
 </html>
+
