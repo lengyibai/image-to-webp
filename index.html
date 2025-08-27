@@ -6,7 +6,7 @@
   <input type="file" id="file" accept="image/*" multiple>
   <label>
     品质：
-    <input type="number" id="q" min="1" max="100" value="75">
+    <input type="number" id="q" min="1" max="100" value="90">
   </label>
   <br><br>
   <div id="progress" style="margin-bottom:8px;"></div>
@@ -29,7 +29,7 @@
       progressDiv.textContent = '准备开始...';
       logDiv.textContent = '';
 
-      const qVal = Math.max(1, Math.min(100, +qInput.value || 75));
+      const qVal = Math.max(1, Math.min(100, +qInput.value || 90));
       const quality = qVal / 100;
       const zip = new JSZip();
       const files = Array.from(fileInput.files);
@@ -85,4 +85,5 @@
   </script>
 </body>
 </html>
+
 
