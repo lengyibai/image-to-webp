@@ -10,33 +10,48 @@
   </label>
   <br><br>
   <div id="progress" style="margin-bottom:8px;"></div>
-  <button id="run">开始压缩</button>
-  <pre id="log" style="border:1px solid #ccc; padding:8px; height:500px; overflow:auto;font-size: 20px;"></pre>
+  <pre id="log" style="border:1px solid #ccc; padding:8px; height:500px; overflow:auto;font-size: 20px; display:flex; align-items:center; justify-content:center; text-align:center; color:#999;">
+    将图片拖到此处自动压缩
+  </pre>
 
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
   <script>
     const fileInput = document.getElementById('file');
     const qInput = document.getElementById('q');
-    const runBtn = document.getElementById('run');
     const progressDiv = document.getElementById('progress');
     const logDiv = document.getElementById('log');
 
     const fmtSize = n => n > 1024*1024 ? (n/1048576).toFixed(2)+' MB' : (n/1024).toFixed(2)+' KB';
 
-    runBtn.addEventListener('click', async () => {
-      if (!fileInput.files.length) return alert('请选择图片');
-      runBtn.disabled = true;
-      progressDiv.textContent = '准备开始...';
+    const resetHint = () => {
+      logDiv.textContent = '将图片拖到此处自动压缩';
+      logDiv.style.display = 'flex';
+      logDiv.style.color = '#999';
+      logDiv.style.alignItems = 'center';
+      logDiv.style.justifyContent = 'center';
+      logDiv.style.textAlign = 'center';
+    };
+
+    const startLog = () => {
       logDiv.textContent = '';
+      logDiv.style.display = 'block';
+      logDiv.style.color = '#000';
+      logDiv.style.textAlign = 'left';
+    };
+
+    const compressFiles = async (files) => {
+      if (!files.length) return alert('请选择图片');
+      progressDiv.textContent = '准备开始...';
+      startLog();
 
       const qVal = Math.max(1, Math.min(100, +qInput.value || 90));
       const quality = qVal / 100;
       const zip = new JSZip();
-      const files = Array.from(fileInput.files);
+      const fileArr = Array.from(files);
 
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        progressDiv.textContent = `压缩中：${i + 1} / ${files.length}`;
+      for (let i = 0; i < fileArr.length; i++) {
+        const file = fileArr[i];
+        progressDiv.textContent = `压缩中：${i + 1} / ${fileArr.length}`;
 
         const bitmap = await createImageBitmap(file);
         const canvas = document.createElement('canvas');
@@ -47,31 +62,25 @@
 
         const blob = await new Promise(r => canvas.toBlob(r, 'image/webp', quality));
         const arrayBuffer = await blob.arrayBuffer();
-
-        // 保留原文件名，只改扩展名
         const newName = file.name.replace(/\.[^.]+$/, '.webp');
-        if (files.length === 1) {
-          // 单张图片直接下载
+
+        if (fileArr.length === 1) {
           const a = document.createElement('a');
           a.href = URL.createObjectURL(blob);
-          a.download = file.name.replace(/\.[^.]+$/, '.webp');
+          a.download = newName;
           a.click();
           URL.revokeObjectURL(a.href);
         } else {
-          // 多张图片打包 ZIP
           zip.file(newName, arrayBuffer);
         }
 
-
-        // 输出压缩前后大小
         logDiv.textContent += `${file.name}: ${fmtSize(file.size)} → ${fmtSize(blob.size)}\n`;
         logDiv.scrollTop = logDiv.scrollHeight;
       }
 
-      if (files.length > 1) {
+      if (fileArr.length > 1) {
         progressDiv.textContent = '正在打包 ZIP...';
         const zipBlob = await zip.generateAsync({ type: 'blob' });
-      
         const a = document.createElement('a');
         a.href = URL.createObjectURL(zipBlob);
         a.download = `Webp压缩-品质${qVal}.zip`;
@@ -80,10 +89,22 @@
       }
 
       progressDiv.textContent = '完成！';
-      runBtn.disabled = false;
+    };
+
+    // 选择文件后自动压缩
+    fileInput.addEventListener('change', () => compressFiles(fileInput.files));
+
+    // 拖拽文件到页面自动压缩
+    document.body.addEventListener('dragover', e => e.preventDefault());
+    document.body.addEventListener('drop', e => {
+      e.preventDefault();
+      if (e.dataTransfer?.files.length) {
+        compressFiles(e.dataTransfer.files);
+      }
     });
+
+    // 初始显示提示
+    resetHint();
   </script>
 </body>
 </html>
-
-
